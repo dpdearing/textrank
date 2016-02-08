@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.sharethis.textrank;
 
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
@@ -56,9 +57,8 @@ import org.tartarus.snowball.ext.englishStemmer;
  */
 
 public class LanguageEnglish extends LanguageModel {
-	private final static Log LOG =
-			LogFactory.getLog(LanguageEnglish.class.getName());
 
+	private final static Log LOG = LogFactory.getLog(LanguageEnglish.class.getName());
 
 	public static SentenceModel splitter_en = null;
 	public static TokenizerModel tokenizer_en = null;
@@ -70,9 +70,9 @@ public class LanguageEnglish extends LanguageModel {
 	 * Constructor. Not quite a Singleton pattern but close enough
 	 * given the resources required to be loaded ONCE.
 	 */
-	public LanguageEnglish (final String path) throws Exception {
+	public LanguageEnglish() throws Exception {
 		if (splitter_en == null) {
-			loadResources(path);
+			loadResources();
 		}
 	}
 
@@ -80,13 +80,12 @@ public class LanguageEnglish extends LanguageModel {
 	/**
 	 * Load libraries for OpenNLP for this specific language.
 	 */
-	public void loadResources (final String path) throws Exception {
-		splitter_en = new SentenceModel(new FileInputStream(path + "/opennlp/en-sent.bin"));
-		tokenizer_en = new TokenizerModel(new FileInputStream(path + "/opennlp/en-token.bin"));
-		tagger_en = new POSModel(new FileInputStream(path + "/opennlp/en-pos-maxent.bin"));
+	public void loadResources () throws Exception {
+		splitter_en = new SentenceModel(getResourceAsStream("/opennlp/en-sent.bin"));
+		tokenizer_en = new TokenizerModel(getResourceAsStream("/opennlp/en-token.bin"));
+		tagger_en = new POSModel(getResourceAsStream("/opennlp/en-pos-maxent.bin"));
 		stemmer_en = new englishStemmer();
 	}
-
 
 	/**
 	 * Split sentences within the paragraph text.
@@ -160,5 +159,9 @@ public class LanguageEnglish extends LanguageModel {
 		stemmer_en.stem();
 
 		return stemmer_en.getCurrent();
+	}
+
+	private InputStream getResourceAsStream(String name) throws FileNotFoundException {
+		return this.getClass().getResourceAsStream("/en" + name);
 	}
 }

@@ -61,7 +61,7 @@ public abstract class LanguageModel {
     public static LanguageModel buildLanguage(final String resource_path, final String lang_code) throws Exception {
 
         if ("en".equals(lang_code)) {
-            return new LanguageEnglish(resource_path + "/" + lang_code);
+            return new LanguageEnglish();
         } else {
             throw new RuntimeException("Language " + lang_code + " not found");
         }
@@ -72,7 +72,7 @@ public abstract class LanguageModel {
      * Load libraries for OpenNLP for this specific language.
      */
 
-    public abstract void loadResources(final String path) throws Exception;
+    public abstract void loadResources() throws Exception;
 
 
     /**
