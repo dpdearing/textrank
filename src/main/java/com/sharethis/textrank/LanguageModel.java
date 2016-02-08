@@ -43,41 +43,28 @@ import org.apache.commons.logging.LogFactory;
  * @author paco@sharethis.com
  */
 
-public abstract class
-    LanguageModel
-{
-    // logging
-
-    private final static Log LOG =
-        LogFactory.getLog(LanguageModel.class.getName());
-
+public abstract class LanguageModel {
 
     /**
      * Public definitions.
      */
-
     public final static int TOKEN_LENGTH_LIMIT = 50;
 
+    // logging
+    private final static Log LOG = LogFactory.getLog(LanguageModel.class.getName());
 
     /**
      * Factory method, loads libraries for OpenNLP based on the given
      * language code.
      */
 
-    public static LanguageModel
-	buildLanguage (final String resource_path, final String lang_code)
-	throws Exception
-    {
-	LanguageModel lang = null;
+    public static LanguageModel buildLanguage(final String resource_path, final String lang_code) throws Exception {
 
-	if ("en".equals(lang_code)) {
-	    lang = new LanguageEnglish(resource_path + "/" + lang_code);
-	}
-	else if ("es".equals(lang_code)) {
-	    lang = new LanguageSpanish(resource_path + "/" + lang_code);
-	}
-
-	return lang;
+        if ("en".equals(lang_code)) {
+            return new LanguageEnglish(resource_path + "/" + lang_code);
+        } else {
+            throw new RuntimeException("Language " + lang_code + " not found");
+        }
     }
 
 
@@ -85,37 +72,28 @@ public abstract class
      * Load libraries for OpenNLP for this specific language.
      */
 
-    public abstract void
-	loadResources (final String path)
-	throws Exception
-	;
+    public abstract void loadResources(final String path) throws Exception;
 
 
     /**
      * Split sentences within the paragraph text.
      */
 
-    public abstract String[]
-	splitParagraph (final String text)
-	;
+    public abstract String[] splitParagraph(final String text);
 
 
     /**
      * Tokenize the sentence text into an array of tokens.
      */
 
-    public abstract String[]
-	tokenizeSentence (final String text)
-	;
+    public abstract String[] tokenizeSentence(final String text);
 
 
     /**
      * Run a part-of-speech tagger on the sentence token list.
      */
 
-    public abstract String[]
-	tagTokens (final String[] token_list)
-	;
+    public abstract String[] tagTokens(final String[] token_list);
 
 
     /**
@@ -123,10 +101,7 @@ public abstract class
      * from a token.
      */
 
-    public abstract String
-	getNodeKey (final String text, final String pos)
-        throws Exception
-	;
+    public abstract String getNodeKey(final String text, final String pos)throws Exception;
 
 
     /**
@@ -134,10 +109,8 @@ public abstract class
      * graph.
      */
 
-    public boolean
-	isRelevant (final String pos)
-    {
-	return isNoun(pos) || isAdjective(pos);
+    public boolean isRelevant(final String pos) {
+        return isNoun(pos) || isAdjective(pos);
     }
 
 
@@ -145,27 +118,21 @@ public abstract class
      * Determine whether the given PoS tag is a noun.
      */
 
-    public abstract boolean
-	isNoun (final String pos)
-	;
+    public abstract boolean isNoun(final String pos);
 
 
     /**
      * Determine whether the given PoS tag is an adjective.
      */
 
-    public abstract boolean
-	isAdjective (final String pos)
-	;
+    public abstract boolean isAdjective(final String pos);
 
 
     /**
      * Perform stemming on the given token.
      */
 
-    public abstract String
-	stemToken (final String token)
-	;
+    public abstract String stemToken(final String token);
 
 
     /**
@@ -176,10 +143,7 @@ public abstract class
      * @throws Exception in case of any problem.
      */
 
-    public String
-        scrubToken (final String token_text)
-        throws Exception
-    {
+    public String scrubToken(final String token_text) throws Exception {
         String scrubbed = token_text;
 
         if (scrubbed.length() > TOKEN_LENGTH_LIMIT) {
