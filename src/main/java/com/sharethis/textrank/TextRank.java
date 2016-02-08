@@ -33,36 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.sharethis.textrank;
 
 import com.sharethis.common.IOUtils;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import net.didion.jwnl.data.POS;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.apache.log4j.PropertyConfigurator;
+
+import java.util.*;
+import java.util.concurrent.Callable;
 
 
 /**
@@ -86,7 +63,6 @@ public class
      * Public definitions.
      */
 
-    public final static String NLP_RESOURCES = "nlp.resources";
     public final static double MIN_NORMALIZED_RANK = 0.05D;
     public final static int MAX_NGRAM_LENGTH = 5;
     public final static long MAX_WORDNET_TEXT = 2000L;
@@ -133,7 +109,7 @@ public class
     {
 	graph = new Graph();
 	ngram_subgraph = null;
-	metric_space = new HashMap<NGram, MetricVector>();
+	metric_space = new HashMap<>();
 
 	this.text = text;
 	this.use_wordnet = use_wordnet;
@@ -157,7 +133,7 @@ public class
 
 	// scan sentences to construct a graph of relevent morphemes
 
-	final ArrayList<Sentence> s_list = new ArrayList<Sentence>();
+	final ArrayList<Sentence> s_list = new ArrayList<>();
 
 	for (String sent_text : lang.splitParagraph(text)) {
 	    final Sentence s = new Sentence(sent_text.trim());
@@ -271,7 +247,7 @@ public class
 	    if (LOG.isDebugEnabled()) {
 		LOG.debug("RANK: " + ngram_subgraph.dist_stats);
 
-		for (Node n : new TreeSet<Node>(ngram_subgraph.values())) {
+		for (Node n : new TreeSet<>(ngram_subgraph.values())) {
 		    final NGram gram = (NGram) n.value;
 		    LOG.debug(gram.getCount() + " " + n.rank + " " + gram.text /* + " @ " + gram.renderContexts() */);
 		}
@@ -280,7 +256,7 @@ public class
 	    if (LOG.isDebugEnabled()) {
 		LOG.debug("RANK: " + synset_subgraph.dist_stats);
 
-		for (Node n : new TreeSet<Node>(synset_subgraph.values())) {
+		for (Node n : new TreeSet<>(synset_subgraph.values())) {
 		    final SynsetLink s = (SynsetLink) n.value;
 		    LOG.info("emit: " + s.synset + " " + n.rank + " " + s.relation);
 		}
@@ -363,50 +339,6 @@ public class
     }
 
 
-    /**
-     * Serialize the graph to a file which can be rendered.
-     */
-
-    public void
-	serializeGraph (final String graph_file)
-	throws Exception
-    {
-	for (Node n : graph.values()) {
-	    n.marked = false;
-	}
-
-	final TreeSet<String> entries = new TreeSet<String>();
-
-	for (Node n : ngram_subgraph.values()) {
-	    final NGram gram = (NGram) n.value;
-	    final MetricVector mv = metric_space.get(gram);
-
-	    if (mv != null) {
-		final StringBuilder sb = new StringBuilder();
-
-		sb.append("rank").append('\t');
-		sb.append(n.getId()).append('\t');
-		sb.append(mv.render());
-		entries.add(sb.toString());
-
-		n.serializeGraph(entries);
-	    }
-	}
-
-        final OutputStreamWriter fw =
-	    new OutputStreamWriter(new FileOutputStream(graph_file), "UTF-8");
-						   
-        try {
-	    for (String entry : entries) {
-		fw.write(entry, 0, entry.length());
-		fw.write('\n');
-	    }
-        }
-	finally {
-            fw.close();
-        }
-    }
-
 
     /**
      * Serialize resulting graph to a string.
@@ -415,7 +347,7 @@ public class
     public String
 	toString ()
     {
-	final TreeSet<MetricVector> key_phrase_list = new TreeSet<MetricVector>(metric_space.values());
+	final TreeSet<MetricVector> key_phrase_list = new TreeSet<>(metric_space.values());
 	final StringBuilder sb = new StringBuilder();
 
 	for (MetricVector mv : key_phrase_list) {
@@ -440,65 +372,27 @@ public class
 	main (final String[] args)
 	throws Exception
     {
-	/** /
-	final String res_path =
-	    new File(System.getProperty(NLP_RESOURCES)).getPath();
-	/* */
 
 	final String log4j_conf = args[0];
 	final String res_path = args[1];
 	final String lang_code = args[2];
 	final String data_file = args[3];
-	final String graph_file = args[4];
 
-        // set up logging for debugging and instrumentation
-        
-        PropertyConfigurator.configure(log4j_conf);
+	// set up logging for debugging and instrumentation
+
+	PropertyConfigurator.configure(log4j_conf);
 
 	// load the sample text from a file
 
 	final String text = IOUtils.readFile(data_file);
 
-	// filter out overly large files
-
-	boolean use_wordnet = true; // false
-	use_wordnet = use_wordnet && ("en".equals(lang_code));
+	boolean use_wordnet = ("en".equals(lang_code));
 
 	// main entry point for the algorithm
 
 	final TextRank tr = new TextRank(res_path, lang_code);
 	tr.prepCall(text, use_wordnet);
-
-	// wrap the call in a timed task
-
-	final FutureTask<Collection<MetricVector>> task = new FutureTask<Collection<MetricVector>>(tr);
-	Collection<MetricVector> answer = null;
-
-	final Thread thread = new Thread(task);
-	thread.run();
-
-	try {
-	    //answer = task.get();  // run until complete
-	    answer = task.get(15000L, TimeUnit.MILLISECONDS); // timeout in N ms
-	}
-	catch (ExecutionException e) {
-	    LOG.error("exec exception", e);
-	}
-	catch (InterruptedException e) {
-	    LOG.error("interrupt", e);
-	}
-	catch (TimeoutException e) {
-	    LOG.error("timeout", e);
-
-	    // Unfortunately, with graph size > 700, even read-only
-	    // access to WordNet on disk will block and cause the
-	    // thread to be uninterruptable. None of the following
-	    // remedies work...
-
-	    //thread.interrupt();
-	    //task.cancel(true);
-	    return;
-	}
+	tr.call();
 
 	LOG.info("\n" + tr);
     }
