@@ -35,9 +35,7 @@ package com.sharethis.textrank;
 import java.io.File;
 
 import opennlp.tools.lang.english.ParserTagger;
-import opennlp.tools.lang.english.SentenceDetector;
 import opennlp.tools.lang.english.Tokenizer;
-import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.util.Sequence;
 
 import org.apache.commons.logging.Log;

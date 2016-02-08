@@ -14,12 +14,6 @@ libraryDependencies ++= Seq(
     ExclusionRule(organization = "com.sun.jdmk"),
     ExclusionRule(organization = "com.sun.jmx"),
     ExclusionRule(organization = "javax.jms")),
-  //Opennlp tools
-  //Maxent
-  //Snowball stemmer
-  //Sax2
-  //Sharethis
-  //Sptoolkit
   "net.sf.trove4j" % "trove4j" % "2.0.2",
   "org.specs2" %% "specs2-core" % "3.6" % "test"
 )
