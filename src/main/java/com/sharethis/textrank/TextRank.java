@@ -44,20 +44,17 @@ import java.util.concurrent.Callable;
 
 /**
  * Java implementation of the TextRank algorithm by Rada Mihalcea, et al.
- *    http://lit.csci.unt.edu/index.php/Graph-based_NLP
+ * http://lit.csci.unt.edu/index.php/Graph-based_NLP
  *
  * @author paco@sharethis.com
  */
 
 public class
-    TextRank
-    implements Callable<Collection<MetricVector>>
-{
+TextRank implements Callable<Collection<MetricVector>> {
+
     // logging
-
     private final static Log LOG =
-        LogFactory.getLog(TextRank.class.getName());
-
+            LogFactory.getLog(TextRank.class.getName());
 
     /**
      * Public definitions.
@@ -67,7 +64,6 @@ public class
     public final static int MAX_NGRAM_LENGTH = 5;
     public final static long MAX_WORDNET_TEXT = 2000L;
     public final static long MAX_WORDNET_GRAPH = 600L;
-
 
     /**
      * Protected members.
@@ -90,12 +86,10 @@ public class
      * Constructor.
      */
 
-    public
-	TextRank (final String res_path, final String lang_code)
-	throws Exception
-    {
-	lang = LanguageModel.buildLanguage(res_path, lang_code);
-	WordNet.buildDictionary(res_path, lang_code);
+    public TextRank(final String res_path, final String lang_code, final boolean use_wordnet) throws Exception {
+        lang = LanguageModel.buildLanguage(res_path, lang_code);
+        this.use_wordnet = use_wordnet;
+        WordNet.buildDictionary(res_path, lang_code);
     }
 
 
@@ -103,16 +97,11 @@ public class
      * Prepare to call algorithm with a new text to analyze.
      */
 
-    public void
-	prepCall (final String text, final boolean use_wordnet)
-	throws Exception
-    {
-	graph = new Graph();
-	ngram_subgraph = null;
-	metric_space = new HashMap<>();
-
-	this.text = text;
-	this.use_wordnet = use_wordnet;
+    public void prepCall(final String text) throws Exception {
+        graph = new Graph();
+        ngram_subgraph = null;
+        metric_space = new HashMap<>();
+        this.text = text;
     }
 
 
@@ -121,180 +110,175 @@ public class
      * (e.g., results of parsed HTML from crawled web content) to
      * build a graph of weighted key phrases.
      */
+    public Collection<MetricVector> call() throws Exception {
+        //////////////////////////////////////////////////
+        // PASS 1: construct a graph from PoS tags
 
-    public Collection<MetricVector>
-	call ()
-	throws Exception
-    {
-	//////////////////////////////////////////////////
-	// PASS 1: construct a graph from PoS tags
+        initTime();
 
-	initTime();
+        // scan sentences to construct a graph of relevent morphemes
 
-	// scan sentences to construct a graph of relevent morphemes
+        final ArrayList<Sentence> s_list = new ArrayList<>();
 
-	final ArrayList<Sentence> s_list = new ArrayList<>();
+        for (String sent_text : lang.splitParagraph(text)) {
+            final Sentence s = new Sentence(sent_text.trim());
+            s.mapTokens(lang, graph);
+            s_list.add(s);
 
-	for (String sent_text : lang.splitParagraph(text)) {
-	    final Sentence s = new Sentence(sent_text.trim());
-	    s.mapTokens(lang, graph);
-	    s_list.add(s);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("s: " + s.text);
+                LOG.debug(s.md5_hash);
+            }
+        }
 
-	    if (LOG.isDebugEnabled()) {
-		LOG.debug("s: " + s.text);
-		LOG.debug(s.md5_hash);
-	    }
-	}
+        markTime("construct_graph");
 
-	markTime("construct_graph");
+        //////////////////////////////////////////////////
+        // PASS 2: run TextRank to determine keywords
 
-	//////////////////////////////////////////////////
-	// PASS 2: run TextRank to determine keywords
+        initTime();
 
-	initTime();
+        final int max_results =
+                (int) Math.round((double) graph.size() * Graph.KEYWORD_REDUCTION_FACTOR);
 
-	final int max_results =
-	    (int) Math.round((double) graph.size() * Graph.KEYWORD_REDUCTION_FACTOR);
+        graph.runTextRank();
+        graph.sortResults(max_results);
 
-	graph.runTextRank();
-	graph.sortResults(max_results);
+        ngram_subgraph = NGram.collectNGrams(lang, s_list, graph.getRankThreshold());
 
-	ngram_subgraph = NGram.collectNGrams(lang, s_list, graph.getRankThreshold());
+        markTime("basic_textrank");
 
-	markTime("basic_textrank");
+        if (LOG.isInfoEnabled()) {
+            LOG.info("TEXT_BYTES:\t" + text.length());
+            LOG.info("GRAPH_SIZE:\t" + graph.size());
+        }
 
-	if (LOG.isInfoEnabled()) {
-	    LOG.info("TEXT_BYTES:\t" + text.length());
-	    LOG.info("GRAPH_SIZE:\t" + graph.size());
-	}
+        //////////////////////////////////////////////////
+        // PASS 3: lemmatize selected keywords and phrases
 
-	//////////////////////////////////////////////////
-	// PASS 3: lemmatize selected keywords and phrases
+        initTime();
 
-	initTime();
+        Graph synset_subgraph = new Graph();
 
-	Graph synset_subgraph = new Graph();
+        // filter for edge cases
 
-	// filter for edge cases
+        if (use_wordnet &&
+                (text.length() < MAX_WORDNET_TEXT) &&
+                (graph.size() < MAX_WORDNET_GRAPH)
+                ) {
+            // test the lexical value of nouns and adjectives in WordNet
 
-	if (use_wordnet &&
-	    (text.length() < MAX_WORDNET_TEXT) &&
-	    (graph.size() < MAX_WORDNET_GRAPH)
-	    ) {
-	    // test the lexical value of nouns and adjectives in WordNet
+            for (Node n : graph.values()) {
+                final KeyWord kw = (KeyWord) n.value;
 
-	    for (Node n: graph.values()) {
-		final KeyWord kw = (KeyWord) n.value;
+                if (lang.isNoun(kw.pos)) {
+                    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.NOUN);
+                } else if (lang.isAdjective(kw.pos)) {
+                    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.ADJECTIVE);
+                }
+            }
 
-		if (lang.isNoun(kw.pos)) {
-		    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.NOUN);
-		}
-		else if (lang.isAdjective(kw.pos)) {
-		    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.ADJECTIVE);
-		}
-	    }
+            // test the collocations in WordNet
 
-	    // test the collocations in WordNet
+            for (Node n : ngram_subgraph.values()) {
+                final NGram gram = (NGram) n.value;
 
-	    for (Node n : ngram_subgraph.values()) {
-		final NGram gram = (NGram) n.value;
+                if (gram.nodes.size() > 1) {
+                    SynsetLink.addKeyWord(synset_subgraph, n, gram.getCollocation(), POS.NOUN);
+                }
+            }
 
-		if (gram.nodes.size() > 1) {
-		    SynsetLink.addKeyWord(synset_subgraph, n, gram.getCollocation(), POS.NOUN);
-		}
-	    }
+            synset_subgraph =
+                    SynsetLink.pruneGraph(synset_subgraph, graph);
+        }
 
-	    synset_subgraph =
-		SynsetLink.pruneGraph(synset_subgraph, graph);
-	}
+        // augment the graph with n-grams added as nodes
 
-	// augment the graph with n-grams added as nodes
+        for (Node n : ngram_subgraph.values()) {
+            final NGram gram = (NGram) n.value;
 
-	for (Node n : ngram_subgraph.values()) {
-	    final NGram gram = (NGram) n.value;
+            if (gram.length < MAX_NGRAM_LENGTH) {
+                graph.put(n.key, n);
 
-	    if (gram.length < MAX_NGRAM_LENGTH) {
-		graph.put(n.key, n);
+                for (Node keyword_node : gram.nodes) {
+                    n.connect(keyword_node);
+                }
+            }
+        }
 
-		for (Node keyword_node : gram.nodes) {
-		    n.connect(keyword_node);
-		}
-	    }
-	}
+        markTime("augment_graph");
 
-	markTime("augment_graph");
+        //////////////////////////////////////////////////
+        // PASS 4: re-run TextRank on the augmented graph
 
-	//////////////////////////////////////////////////
-	// PASS 4: re-run TextRank on the augmented graph
+        initTime();
 
-	initTime();
+        graph.runTextRank();
+        //graph.sortResults(graph.size() / 2);
 
-	graph.runTextRank();
-	//graph.sortResults(graph.size() / 2);
+        // collect stats for metrics
 
-	// collect stats for metrics
+        final int ngram_max_count =
+                NGram.calcStats(ngram_subgraph);
 
-	final int ngram_max_count =
-	    NGram.calcStats(ngram_subgraph);
+        if (use_wordnet) {
+            SynsetLink.calcStats(synset_subgraph);
+        }
 
-	if (use_wordnet) {
-	    SynsetLink.calcStats(synset_subgraph);
-	}
+        markTime("ngram_textrank");
 
-	markTime("ngram_textrank");
+        if (LOG.isInfoEnabled()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("RANK: " + ngram_subgraph.dist_stats);
 
-	if (LOG.isInfoEnabled()) {
-	    if (LOG.isDebugEnabled()) {
-		LOG.debug("RANK: " + ngram_subgraph.dist_stats);
+                for (Node n : new TreeSet<>(ngram_subgraph.values())) {
+                    final NGram gram = (NGram) n.value;
+                    LOG.debug(gram.getCount() + " " + n.rank + " " + gram.text /* + " @ " + gram.renderContexts() */);
+                }
+            }
 
-		for (Node n : new TreeSet<>(ngram_subgraph.values())) {
-		    final NGram gram = (NGram) n.value;
-		    LOG.debug(gram.getCount() + " " + n.rank + " " + gram.text /* + " @ " + gram.renderContexts() */);
-		}
-	    }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("RANK: " + synset_subgraph.dist_stats);
 
-	    if (LOG.isDebugEnabled()) {
-		LOG.debug("RANK: " + synset_subgraph.dist_stats);
+                for (Node n : new TreeSet<>(synset_subgraph.values())) {
+                    final SynsetLink s = (SynsetLink) n.value;
+                    LOG.info("emit: " + s.synset + " " + n.rank + " " + s.relation);
+                }
+            }
+        }
 
-		for (Node n : new TreeSet<>(synset_subgraph.values())) {
-		    final SynsetLink s = (SynsetLink) n.value;
-		    LOG.info("emit: " + s.synset + " " + n.rank + " " + s.relation);
-		}
-	    }
-	}
+        //////////////////////////////////////////////////
+        // PASS 5: construct a metric space for overall ranking
 
-	//////////////////////////////////////////////////
-	// PASS 5: construct a metric space for overall ranking
+        initTime();
 
-	initTime();
+        final double link_min = ngram_subgraph.dist_stats.getMin();
+        final double link_coeff = ngram_subgraph.dist_stats.getMax() - ngram_subgraph.dist_stats.getMin();
 
-	final double link_min = ngram_subgraph.dist_stats.getMin();
-	final double link_coeff = ngram_subgraph.dist_stats.getMax() - ngram_subgraph.dist_stats.getMin();
+        final double count_min = 1;
+        final double count_coeff = (double) ngram_max_count - 1;
 
-	final double count_min = 1;
-	final double count_coeff = (double) ngram_max_count - 1;
+        final double synset_min = synset_subgraph.dist_stats.getMin();
+        final double synset_coeff = synset_subgraph.dist_stats.getMax() - synset_subgraph.dist_stats.getMin();
 
-	final double synset_min = synset_subgraph.dist_stats.getMin();
-	final double synset_coeff = synset_subgraph.dist_stats.getMax() - synset_subgraph.dist_stats.getMin();
+        for (Node n : ngram_subgraph.values()) {
+            final NGram gram = (NGram) n.value;
 
-	for (Node n : ngram_subgraph.values()) {
-	    final NGram gram = (NGram) n.value;
+            if (gram.length < MAX_NGRAM_LENGTH) {
+                final double link_rank = (n.rank - link_min) / link_coeff;
+                final double count_rank = (gram.getCount() - count_min) / count_coeff;
+                final double synset_rank = use_wordnet ? n.maxNeighbor(synset_min, synset_coeff) : 0.0D;
 
-	    if (gram.length < MAX_NGRAM_LENGTH) {
-		final double link_rank = (n.rank - link_min) / link_coeff;
-		final double count_rank = (gram.getCount() - count_min) / count_coeff;
-		final double synset_rank = use_wordnet ? n.maxNeighbor(synset_min, synset_coeff) : 0.0D;
+                final MetricVector mv = new MetricVector(gram, link_rank, count_rank, synset_rank);
+                metric_space.put(gram, mv);
+            }
+        }
 
-		final MetricVector mv = new MetricVector(gram, link_rank, count_rank, synset_rank);
-		metric_space.put(gram, mv);
-	    }
-	}
+        markTime("normalize_ranks");
 
-	markTime("normalize_ranks");
+        // return results
 
-	// return results
-
-	return metric_space.values();
+        return metric_space.values();
     }
 
 
@@ -306,10 +290,8 @@ public class
      * Re-initialize the timer.
      */
 
-    public void
-	initTime ()
-    {
-	start_time = System.currentTimeMillis();
+    public void initTime() {
+        start_time = System.currentTimeMillis();
     }
 
 
@@ -317,14 +299,12 @@ public class
      * Report the elapsed time with a label.
      */
 
-    public void
-	markTime (final String label)
-    {
-	elapsed_time = System.currentTimeMillis() - start_time;
+    public void markTime(final String label) {
+        elapsed_time = System.currentTimeMillis() - start_time;
 
-	if (LOG.isInfoEnabled()) {
-	    LOG.info("ELAPSED_TIME:\t" + elapsed_time + "\t" + label);
-	}
+        if (LOG.isInfoEnabled()) {
+            LOG.info("ELAPSED_TIME:\t" + elapsed_time + "\t" + label);
+        }
     }
 
 
@@ -332,31 +312,26 @@ public class
      * Accessor for the graph.
      */
 
-    public Graph
-	getGraph ()
-    {
-	return graph;
+    public Graph getGraph() {
+        return graph;
     }
 
 
-
     /**
-     * Serialize resulting graph to a string.
+     * Serialize results to a string.
      */
 
-    public String
-	toString ()
-    {
-	final TreeSet<MetricVector> key_phrase_list = new TreeSet<>(metric_space.values());
-	final StringBuilder sb = new StringBuilder();
+    public String toString() {
+        final TreeSet<MetricVector> key_phrase_list = new TreeSet<>(metric_space.values());
+        final StringBuilder sb = new StringBuilder();
 
-	for (MetricVector mv : key_phrase_list) {
-	    if (mv.metric >= MIN_NORMALIZED_RANK) {
-		sb.append(mv.render()).append("\t").append(mv.value.text).append("\n");
-	    }
-	}
+        for (MetricVector mv : key_phrase_list) {
+            if (mv.metric >= MIN_NORMALIZED_RANK) {
+                sb.append(mv.render()).append("\t").append(mv.value.text).append("\n");
+            }
+        }
 
-	return sb.toString();
+        return sb.toString();
     }
 
 
@@ -369,31 +344,29 @@ public class
      */
 
     public static void
-	main (final String[] args)
-	throws Exception
-    {
+    main(final String[] args)
+            throws Exception {
 
-	final String log4j_conf = args[0];
-	final String res_path = args[1];
-	final String lang_code = args[2];
-	final String data_file = args[3];
+        final String log4j_conf = args[0];
+        final String res_path = args[1];
+        final String lang_code = args[2];
+        final String data_file = args[3];
 
-	// set up logging for debugging and instrumentation
+        // set up logging for debugging and instrumentation
 
-	PropertyConfigurator.configure(log4j_conf);
+        PropertyConfigurator.configure(log4j_conf);
 
-	// load the sample text from a file
+        // load the sample text from a file
 
-	final String text = IOUtils.readFile(data_file);
+        final String text = IOUtils.readFile(data_file);
 
-	boolean use_wordnet = ("en".equals(lang_code));
+        boolean use_wordnet = ("en".equals(lang_code));
 
-	// main entry point for the algorithm
+        // main entry point for the algorithm
+        final TextRank tr = new TextRank(res_path, lang_code, use_wordnet);
+        tr.prepCall(text);
+        tr.call();
 
-	final TextRank tr = new TextRank(res_path, lang_code);
-	tr.prepCall(text, use_wordnet);
-	tr.call();
-
-	LOG.info("\n" + tr);
+        LOG.info("\n" + tr);
     }
 }
