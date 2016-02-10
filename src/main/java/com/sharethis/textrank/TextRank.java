@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.sharethis.textrank;
 
 import com.sharethis.common.IOUtils;
-import net.didion.jwnl.data.POS;
+import net.sf.extjwnl.data.POS;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
@@ -62,8 +62,6 @@ TextRank implements Callable<Collection<MetricVector>> {
 
     public final static double MIN_NORMALIZED_RANK = 0.05D;
     public final static int MAX_NGRAM_LENGTH = 5;
-    public final static long MAX_WORDNET_TEXT = 2000L;
-    public final static long MAX_WORDNET_GRAPH = 600L;
 
     /**
      * Protected members.
@@ -72,7 +70,7 @@ TextRank implements Callable<Collection<MetricVector>> {
     protected LanguageModel lang = null;
 
     protected String text = null;
-    protected boolean use_wordnet = false;
+    protected WordNet wordNet = null;
 
     protected Graph graph = null;
     protected Graph ngram_subgraph = null;
@@ -88,8 +86,11 @@ TextRank implements Callable<Collection<MetricVector>> {
 
     public TextRank(final String res_path, final String lang_code) throws Exception {
         lang = LanguageModel.buildLanguage(lang_code);
-        this.use_wordnet = ("en".equals(lang_code));
-        WordNet.buildDictionary(res_path, lang_code);
+        boolean use_wordnet = ("en".equals(lang_code));
+        if (use_wordnet) {
+            wordNet = new WordNet();
+        }
+
     }
 
 
@@ -162,19 +163,16 @@ TextRank implements Callable<Collection<MetricVector>> {
 
         // filter for edge cases
 
-        if (use_wordnet &&
-                (text.length() < MAX_WORDNET_TEXT) &&
-                (graph.size() < MAX_WORDNET_GRAPH)
-                ) {
+        if (usingWordNet()) {
             // test the lexical value of nouns and adjectives in WordNet
 
             for (Node n : graph.values()) {
                 final KeyWord kw = (KeyWord) n.value;
 
                 if (lang.isNoun(kw.pos)) {
-                    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.NOUN);
+                    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.NOUN, wordNet);
                 } else if (lang.isAdjective(kw.pos)) {
-                    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.ADJECTIVE);
+                    SynsetLink.addKeyWord(synset_subgraph, n, kw.text, POS.ADJECTIVE, wordNet);
                 }
             }
 
@@ -184,7 +182,7 @@ TextRank implements Callable<Collection<MetricVector>> {
                 final NGram gram = (NGram) n.value;
 
                 if (gram.nodes.size() > 1) {
-                    SynsetLink.addKeyWord(synset_subgraph, n, gram.getCollocation(), POS.NOUN);
+                    SynsetLink.addKeyWord(synset_subgraph, n, gram.getCollocation(), POS.NOUN, wordNet);
                 }
             }
 
@@ -221,7 +219,7 @@ TextRank implements Callable<Collection<MetricVector>> {
         final int ngram_max_count =
                 NGram.calcStats(ngram_subgraph);
 
-        if (use_wordnet) {
+        if (usingWordNet()) {
             SynsetLink.calcStats(synset_subgraph);
         }
 
@@ -267,7 +265,7 @@ TextRank implements Callable<Collection<MetricVector>> {
             if (gram.length < MAX_NGRAM_LENGTH) {
                 final double link_rank = (n.rank - link_min) / link_coeff;
                 final double count_rank = (gram.getCount() - count_min) / count_coeff;
-                final double synset_rank = use_wordnet ? n.maxNeighbor(synset_min, synset_coeff) : 0.0D;
+                final double synset_rank = usingWordNet() ? n.maxNeighbor(synset_min, synset_coeff) : 0.0D;
 
                 final MetricVector mv = new MetricVector(gram, link_rank, count_rank, synset_rank);
                 metric_space.put(gram, mv);
@@ -279,6 +277,10 @@ TextRank implements Callable<Collection<MetricVector>> {
         // return results
 
         return metric_space.values();
+    }
+
+    public boolean usingWordNet() {
+        return wordNet != null;
     }
 
 

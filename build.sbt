@@ -1,4 +1,4 @@
-name := """testrank"""
+name := """textrank"""
 
 version := "1.0"
 
@@ -9,7 +9,8 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-math" % "2.0",
   "jaxen" % "jaxen" % "1.1.1",
   "jdom" % "jdom" % "1.1",
-  "net.sf.jwordnet" % "jwnl" % "1.3.3",
+  "net.sf.extjwnl" % "extjwnl" % "1.9.1",
+  "net.sf.extjwnl" % "extjwnl-data-wn31" % "1.2",
   "log4j" % "log4j" % "1.2.15" excludeAll(
     ExclusionRule(organization = "com.sun.jdmk"),
     ExclusionRule(organization = "com.sun.jmx"),
