@@ -58,7 +58,7 @@ public abstract class LanguageModel {
      * language code.
      */
 
-    public static LanguageModel buildLanguage(final String resource_path, final String lang_code) throws Exception {
+    public static LanguageModel buildLanguage(final String lang_code) throws Exception {
 
         if ("en".equals(lang_code)) {
             return new LanguageEnglish();

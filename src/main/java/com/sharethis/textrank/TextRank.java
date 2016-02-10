@@ -86,9 +86,9 @@ TextRank implements Callable<Collection<MetricVector>> {
      * Constructor.
      */
 
-    public TextRank(final String res_path, final String lang_code, final boolean use_wordnet) throws Exception {
-        lang = LanguageModel.buildLanguage(res_path, lang_code);
-        this.use_wordnet = use_wordnet;
+    public TextRank(final String res_path, final String lang_code) throws Exception {
+        lang = LanguageModel.buildLanguage(lang_code);
+        this.use_wordnet = ("en".equals(lang_code));
         WordNet.buildDictionary(res_path, lang_code);
     }
 
@@ -322,16 +322,23 @@ TextRank implements Callable<Collection<MetricVector>> {
      */
 
     public String toString() {
-        final TreeSet<MetricVector> key_phrase_list = new TreeSet<>(metric_space.values());
         final StringBuilder sb = new StringBuilder();
+        for (Keyphrase keyphrase: getKeyphrases()) {
+            sb.append(keyphrase.getMetric()).append("\t").append(keyphrase.getPhrase()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    public List<Keyphrase> getKeyphrases() {
+        final TreeSet<MetricVector> key_phrase_list = new TreeSet<>(metric_space.values());
+        final List<Keyphrase> keyphraseList = new ArrayList<>();
 
         for (MetricVector mv : key_phrase_list) {
             if (mv.metric >= MIN_NORMALIZED_RANK) {
-                sb.append(mv.render()).append("\t").append(mv.value.text).append("\n");
+                keyphraseList.add(new Keyphrase(mv.value.text, mv.metric));
             }
         }
-
-        return sb.toString();
+        return keyphraseList;
     }
 
 
@@ -360,10 +367,8 @@ TextRank implements Callable<Collection<MetricVector>> {
 
         final String text = IOUtils.readFile(data_file);
 
-        boolean use_wordnet = ("en".equals(lang_code));
-
         // main entry point for the algorithm
-        final TextRank tr = new TextRank(res_path, lang_code, use_wordnet);
+        final TextRank tr = new TextRank(res_path, lang_code);
         tr.prepCall(text);
         tr.call();
 
