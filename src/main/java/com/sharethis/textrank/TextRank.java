@@ -84,7 +84,7 @@ TextRank implements Callable<Collection<MetricVector>> {
      * Constructor.
      */
 
-    public TextRank(final String res_path, final String lang_code) throws Exception {
+    public TextRank(final String lang_code) throws Exception {
         lang = LanguageModel.buildLanguage(lang_code);
         boolean use_wordnet = ("en".equals(lang_code));
         if (use_wordnet) {
@@ -357,9 +357,8 @@ TextRank implements Callable<Collection<MetricVector>> {
             throws Exception {
 
         final String log4j_conf = args[0];
-        final String res_path = args[1];
-        final String lang_code = args[2];
-        final String data_file = args[3];
+        final String lang_code = args[1];
+        final String data_file = args[2];
 
         // set up logging for debugging and instrumentation
 
@@ -370,7 +369,7 @@ TextRank implements Callable<Collection<MetricVector>> {
         final String text = IOUtils.readFile(data_file);
 
         // main entry point for the algorithm
-        final TextRank tr = new TextRank(res_path, lang_code);
+        final TextRank tr = new TextRank(lang_code);
         tr.prepCall(text);
         tr.call();
 
