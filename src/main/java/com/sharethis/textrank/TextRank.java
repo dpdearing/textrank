@@ -39,8 +39,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-
 
 /**
  * Java implementation of the TextRank algorithm by Rada Mihalcea, et al.
@@ -49,8 +47,7 @@ import java.util.concurrent.Callable;
  * @author paco@sharethis.com
  */
 
-public class
-TextRank implements Callable<Collection<MetricVector>> {
+public class TextRank {
 
     // logging
     private final static Log LOG =
@@ -95,23 +92,17 @@ TextRank implements Callable<Collection<MetricVector>> {
 
 
     /**
-     * Prepare to call algorithm with a new text to analyze.
-     */
-
-    public void prepCall(final String text) throws Exception {
-        graph = new Graph();
-        ngram_subgraph = null;
-        metric_space = new HashMap<>();
-        this.text = text;
-    }
-
-
-    /**
      * Run the TextRank algorithm on the given semi-structured text
      * (e.g., results of parsed HTML from crawled web content) to
      * build a graph of weighted key phrases.
      */
-    public Collection<MetricVector> call() throws Exception {
+    public void run(final String text) throws Exception {
+
+        graph = new Graph();
+        ngram_subgraph = null;
+        metric_space = new HashMap<>();
+        this.text = text;
+
         //////////////////////////////////////////////////
         // PASS 1: construct a graph from PoS tags
 
@@ -273,10 +264,6 @@ TextRank implements Callable<Collection<MetricVector>> {
         }
 
         markTime("normalize_ranks");
-
-        // return results
-
-        return metric_space.values();
     }
 
     public boolean usingWordNet() {
@@ -370,8 +357,7 @@ TextRank implements Callable<Collection<MetricVector>> {
 
         // main entry point for the algorithm
         final TextRank tr = new TextRank(lang_code);
-        tr.prepCall(text);
-        tr.call();
+        tr.run(text);
 
         LOG.info("\n" + tr);
     }

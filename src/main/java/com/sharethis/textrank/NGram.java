@@ -151,44 +151,41 @@ public class
      * Factory method.
      */
 
-    public static NGram
-	buildNGram (final Graph ngrams, final Sentence s, final LinkedList<Integer> token_span, final double max_rank)
-	throws Exception
-    {
-	final HashSet<Node> nodes = new HashSet<Node>();
-	final StringBuffer sb_key = new StringBuffer("NGram");
-	final StringBuffer sb_text = new StringBuffer();
+    public static NGram buildNGram (final Graph ngrams, final Sentence s, final LinkedList<Integer> token_span, final double max_rank) throws Exception {
 
-	for (int i : token_span) {
-	    if (!"".equals(s.token_list[i])) {
-		nodes.add(s.node_list[i]);
-		sb_key.append(s.node_list[i].key);
-		sb_text.append(s.token_list[i]).append(' ');
-	    }
-	}
+		final HashSet<Node> nodes = new HashSet<Node>();
+		final StringBuffer sb_key = new StringBuffer("NGram");
+		final StringBuffer sb_text = new StringBuffer();
 
-	final Context context = new Context(s, token_span.get(0));
-	final String gram_key = sb_key.toString();
+		for (int i : token_span) {
+			if (!"".equals(s.token_list[i])) {
+			nodes.add(s.node_list[i]);
+			sb_key.append(s.node_list[i].key);
+			sb_text.append(s.token_list[i]).append(' ');
+			}
+		}
 
-	Node n = ngrams.get(gram_key);
-	NGram gram = null;
+		final Context context = new Context(s, token_span.get(0));
+		final String gram_key = sb_key.toString();
 
-	if (n == null) {
-	    gram = new NGram(sb_text.toString().trim(), nodes, context);
+		Node n = ngrams.get(gram_key);
+		NGram gram = null;
 
-	    if (!"".equals(gram.text.trim())) {
-		n = Node.buildNode(ngrams, gram_key, gram);
-		n.rank = max_rank;
+		if (n == null) {
+			gram = new NGram(sb_text.toString().trim(), nodes, context);
 
-		ngrams.put(gram_key, n);
-	    }
-	}
-	else {
-	    gram = (NGram) n.value;
-	    gram.contexts.add(context);
-	}
+			if (!"".equals(gram.text.trim())) {
+				n = Node.buildNode(ngrams, gram_key, gram);
+				n.rank = max_rank;
+				ngrams.put(gram_key, n);
+			}
+		}
+		else {
+			gram = (NGram) n.value;
+			gram.contexts.add(context);
+		}
 
-	return gram;
+		return gram;
     }
 
 
@@ -196,10 +193,8 @@ public class
      * Report the n-grams marked in each sentence.
      */
 
-    public static Graph
-	collectNGrams (final LanguageModel lang, final List<Sentence> s_list, final double rank_threshold)
-	throws Exception
-    {
+    public static Graph collectNGrams (final LanguageModel lang, final List<Sentence> s_list, final double rank_threshold) throws Exception {
+
 	final Graph ngrams = new Graph();
 	final LinkedList<Integer> token_span = new LinkedList<Integer>();
 
@@ -223,7 +218,7 @@ public class
 			    final NGram gram = buildNGram(ngrams, s, token_span, max_rank);
 
 			    if (LOG.isDebugEnabled()) {
-				LOG.debug("emit: " + gram.text + " @ " + gram.getCount() + " span " + gram.length);
+					LOG.debug("emit: " + gram.text + " @ " + gram.getCount() + " span " + gram.length);
 			    }
 			}
 		    }

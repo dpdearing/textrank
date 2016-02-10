@@ -48,9 +48,7 @@ import org.apache.commons.math.stat.descriptive.SummaryStatistics;
  * @author paco@sharethis.com
  */
 
-public class
-    Graph
-    extends TreeMap<String, Node>
+public class Graph extends TreeMap<String, Node>
 {
     // logging
 
