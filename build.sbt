@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
     ExclusionRule(organization = "javax.jms")),
   "net.sf.trove4j" % "trove4j" % "2.0.2",
   "org.apache.opennlp" % "opennlp-tools" % "1.5.3",
+  "org.apache.lucene" %	"lucene-snowball" %	"3.0.3",
   "org.specs2" %% "specs2-core" % "3.6" % "test"
 )
 

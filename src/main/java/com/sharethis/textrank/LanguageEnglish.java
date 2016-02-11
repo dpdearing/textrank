@@ -47,7 +47,7 @@ import opennlp.tools.util.Sequence;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.tartarus.snowball.ext.englishStemmer;
+import org.tartarus.snowball.ext.EnglishStemmer;
 
 
 /**
@@ -64,7 +64,7 @@ public class LanguageEnglish extends LanguageModel {
 	public static SentenceModel splitter_en = null;
 	public static TokenizerModel tokenizer_en = null;
 	public static POSModel tagger_en = null;
-	public static englishStemmer stemmer_en = null;
+	public static EnglishStemmer stemmer_en = null;
 
 
 	/**
@@ -85,7 +85,7 @@ public class LanguageEnglish extends LanguageModel {
 		splitter_en = new SentenceModel(getResourceAsStream("/opennlp/en-sent.bin"));
 		tokenizer_en = new TokenizerModel(getResourceAsStream("/opennlp/en-token.bin"));
 		tagger_en = new POSModel(getResourceAsStream("/opennlp/en-pos-maxent.bin"));
-		stemmer_en = new englishStemmer();
+		stemmer_en = new EnglishStemmer();
 	}
 
 	/**
