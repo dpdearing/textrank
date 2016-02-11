@@ -34,6 +34,7 @@ package com.sharethis.textrank;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
@@ -101,13 +102,17 @@ public class LanguageEnglish extends LanguageModel {
 	public String[] tokenizeSentence (final String text) {
 		final String[] token_list = new TokenizerME(tokenizer_en).tokenize(text);
 
-		for (int i = 0; i < token_list.length; i++) {
-			token_list[i] = token_list[i].replace("\"", "").toLowerCase().trim();
+		ArrayList<String> cleanedTokens = new ArrayList<>(token_list.length);
+
+		for (String token : token_list) {
+			String clean = token.replace("\"", "").toLowerCase().trim();
+			if (clean.matches("[a-zA-Z0-9].*")) {
+				cleanedTokens.add(clean);
+			}
 		}
 
-		return token_list;
+		return cleanedTokens.toArray(new String[cleanedTokens.size()]);
 	}
-
 
 	/**
 	 * Run a part-of-speech tagger on the sentence token list.

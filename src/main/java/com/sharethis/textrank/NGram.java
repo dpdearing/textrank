@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.sharethis.textrank;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -63,8 +62,8 @@ public class
      * Public members.
      */
 
-    public HashSet<Node> nodes = new HashSet<Node>();
-    public HashSet<Context> contexts = new HashSet<Context>();
+    public HashSet<Node> nodes = new HashSet<>();
+    public HashSet<Context> contexts = new HashSet<>();
     public int length = 0;
 
 
@@ -109,8 +108,7 @@ public class
      * Short-cut replacement for a toString() method.
      */
 
-    public String
-	renderContexts ()
+    public String renderContexts ()
     {
 	final StringBuilder sb = new StringBuilder();
 
@@ -153,9 +151,9 @@ public class
 
     public static NGram buildNGram (final Graph ngrams, final Sentence s, final LinkedList<Integer> token_span, final double max_rank) throws Exception {
 
-		final HashSet<Node> nodes = new HashSet<Node>();
-		final StringBuffer sb_key = new StringBuffer("NGram");
-		final StringBuffer sb_text = new StringBuffer();
+		final HashSet<Node> nodes = new HashSet<>();
+		final StringBuilder sb_key = new StringBuilder("NGram");
+		final StringBuilder sb_text = new StringBuilder();
 
 		for (int i : token_span) {
 			if (!"".equals(s.token_list[i])) {
@@ -169,7 +167,7 @@ public class
 		final String gram_key = sb_key.toString();
 
 		Node n = ngrams.get(gram_key);
-		NGram gram = null;
+		NGram gram;
 
 		if (n == null) {
 			gram = new NGram(sb_text.toString().trim(), nodes, context);
@@ -196,7 +194,7 @@ public class
     public static Graph collectNGrams (final LanguageModel lang, final List<Sentence> s_list, final double rank_threshold) throws Exception {
 
 	final Graph ngrams = new Graph();
-	final LinkedList<Integer> token_span = new LinkedList<Integer>();
+	final LinkedList<Integer> token_span = new LinkedList<>();
 
 	for (Sentence s : s_list) {
 	    boolean span_marked = false;
