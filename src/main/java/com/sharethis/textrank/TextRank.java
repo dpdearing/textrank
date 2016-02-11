@@ -60,13 +60,12 @@ public class TextRank {
         }
     }
 
-
     /**
      * Run the TextRank algorithm on the given semi-structured text
      * (e.g., results of parsed HTML from crawled web content) to
      * build a graph of weighted key phrases.
      */
-    public TextRankRun run(final String text) throws Exception {
+    synchronized public TextRankRun run(final String text) throws Exception {
         TextRankRun run = new TextRankRun(lang, wordNet);
         run.run(text);
         return run;
