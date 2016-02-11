@@ -32,6 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.sharethis.textrank;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Java implementation of the TextRank algorithm by Rada Mihalcea, et al.
  * http://lit.csci.unt.edu/index.php/Graph-based_NLP
@@ -41,23 +45,24 @@ package com.sharethis.textrank;
 
 public class TextRank {
 
-    /**
-     * Protected members.
-     */
-
     protected LanguageModel lang = null;
     protected WordNet wordNet = null;
 
-    /**
-     * Constructor.
-     */
+    private ExecutorService ex = Executors.newSingleThreadExecutor();
+    private static long DEFAULT_TIMEOUT_MILLIS = 10000;
+    private long timeoutMillis;
 
-    public TextRank(final String lang_code) throws Exception {
+    public TextRank(final String lang_code) throws Exception{
+        this(lang_code, DEFAULT_TIMEOUT_MILLIS);
+    }
+
+    public TextRank(final String lang_code, final long timeoutMillis) throws Exception {
         lang = LanguageModel.buildLanguage(lang_code);
         boolean use_wordnet = ("en".equals(lang_code));
         if (use_wordnet) {
             wordNet = new WordNet();
         }
+        this.timeoutMillis = timeoutMillis;
     }
 
     /**
@@ -65,10 +70,9 @@ public class TextRank {
      * (e.g., results of parsed HTML from crawled web content) to
      * build a graph of weighted key phrases.
      */
-    synchronized public TextRankRun run(final String text) throws Exception {
-        TextRankRun run = new TextRankRun(lang, wordNet);
-        run.run(text);
-        return run;
+    public TextRankRun run(final String text) throws Exception {
+        return ex.submit(new TextRankRun(lang, wordNet, text))
+                .get(timeoutMillis, TimeUnit.MILLISECONDS);
     }
 
 }

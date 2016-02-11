@@ -37,8 +37,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 
-public class TextRankRun {
+public class TextRankRun implements Callable<TextRankRun>{
 
     // logging
     private final static Log LOG =
@@ -71,9 +72,10 @@ public class TextRankRun {
      * Constructor.
      */
 
-    public TextRankRun(LanguageModel lang, WordNet wordNet) throws Exception {
+    public TextRankRun(LanguageModel lang, WordNet wordNet, final String text) throws Exception {
         this.lang = lang;
         this.wordNet = wordNet;
+        this.text = text;
     }
 
 
@@ -82,12 +84,11 @@ public class TextRankRun {
      * (e.g., results of parsed HTML from crawled web content) to
      * build a graph of weighted key phrases.
      */
-    public void run(final String text) throws Exception {
+    public TextRankRun call() throws Exception {
 
         graph = new Graph();
         ngram_subgraph = null;
         metric_space = new HashMap<>();
-        this.text = text;
 
         //////////////////////////////////////////////////
         // PASS 1: construct a graph from PoS tags
@@ -250,6 +251,8 @@ public class TextRankRun {
         }
 
         markTime("normalize_ranks");
+
+        return this;
     }
 
     public boolean usingWordNet() {
