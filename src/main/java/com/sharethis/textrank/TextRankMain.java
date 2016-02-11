@@ -38,6 +38,7 @@ public class TextRankMain {
         // main entry point for the algorithm
         final TextRank tr = new TextRank(lang_code);
         final TextRankRun run = tr.run(text);
+        tr.shutdown();
 
         LOG.info("\n" + run);
     }

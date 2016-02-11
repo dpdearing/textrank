@@ -75,4 +75,8 @@ public class TextRank {
                 .get(timeoutMillis, TimeUnit.MILLISECONDS);
     }
 
+    public void shutdown() {
+        ex.shutdown();
+    }
+
 }
