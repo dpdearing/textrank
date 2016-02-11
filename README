@@ -1,12 +1,22 @@
-Open source Java implementation of the TextRank algorithm by Mihalcea,
-et al. Note that this code only implements key phrase extraction based
-on keyword co-occurance described in section 3 of the Mihalcea-Tarau
-paper. This code does not yet implement the sentence extraction
-described in section 4 of that paper.
+# Overview
+
+This is a Java implementation of the TextRank algorithm by Mihalcea, et al.
+It only implements key phrase extraction based on keyword co-occurrence described in section 3 of the Mihalcea-Tarau
+paper. This code does not yet implement the sentence extraction described in section 4 of that paper.
 
 See also:
   http://lit.csci.unt.edu/index.php/Graph-based_NLP
 
-Original GitHub code repos:
+This fork is based off the original GitHub code repo at:
   https://github.com/ceteri/textrank
+
+With the code changes to support OpenNLP 1.5.3 taken from this other fork:
   https://github.com/emres/textrank
+
+# Build
+
+To build and test:
+
+    ./activator test
+
+For an example of usage look at the tests
