@@ -62,6 +62,8 @@ public abstract class LanguageModel {
 
         if ("en".equals(lang_code)) {
             return new LanguageEnglish();
+        } else if ("nl".equals(lang_code)) {
+            return new LanguageDutch();
         } else {
             throw new RuntimeException("Language " + lang_code + " not found");
         }
