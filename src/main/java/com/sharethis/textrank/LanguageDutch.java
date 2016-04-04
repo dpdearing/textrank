@@ -18,10 +18,10 @@ import java.util.ArrayList;
 
 /**
  * Implementation of Dutch-specific tools for natural language processing.
+ * Copied from https://github.com/emres/textrank/blob/master/src/com/sharethis/textrank/LanguageDutch.java
  *
  * @author Emre Sevinc emre.sevinc@gmail.com
  * @author Robert Gibbon
- * @implNote Copied from https://github.com/emres/textrank/blob/master/src/com/sharethis/textrank/LanguageDutch.java
  */
 public class LanguageDutch extends LanguageModel {
     private final static Log LOG = LogFactory.getLog(LanguageDutch.class.getName());
