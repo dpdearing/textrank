@@ -32,12 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.sharethis.textrank;
 
-import com.sharethis.common.IOUtils;
 import net.sf.extjwnl.data.POS;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -74,11 +72,10 @@ public class TextRankRun implements Callable<TextRankRun>{
      * Constructor.
      */
 
-    public TextRankRun(LanguageModel lang, WordNet wordNet, final File textFile) throws Exception {
+    public TextRankRun(LanguageModel lang, WordNet wordNet, final String text) throws Exception {
         this.lang = lang;
         this.wordNet = wordNet;
-        // load the sample text from the file
-        this.text = IOUtils.readFile(textFile.getAbsolutePath());
+        this.text = text;
     }
 
 

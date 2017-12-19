@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.sharethis.textrank;
 
+import com.sharethis.common.IOUtils;
+
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,12 +74,13 @@ public class TextRank {
      * build a graph of weighted key phrases.
      */
     public TextRankRun run(final String text) throws Exception {
-        return run(new File(text));
+        return ex.submit(new TextRankRun(lang, wordNet, text))
+              .get(timeoutMillis, TimeUnit.MILLISECONDS);
     }
 
     public TextRankRun run(final File textFile) throws Exception {
-        return ex.submit(new TextRankRun(lang, wordNet, textFile))
-              .get(timeoutMillis, TimeUnit.MILLISECONDS);
+        final String text = IOUtils.readFile(textFile.getAbsolutePath());
+        return run(text);
     }
 
     public void shutdown() {
