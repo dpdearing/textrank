@@ -6,6 +6,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class TextRankMain {
 
     // logging
@@ -19,8 +24,7 @@ public class TextRankMain {
      * Main entry point.
      */
 
-    public static void
-    main(final String[] args)
+    public static void main(final String[] args)
             throws Exception {
 
         final String log4j_conf = args[0];
@@ -28,18 +32,37 @@ public class TextRankMain {
         final String data_file = args[2];
 
         // set up logging for debugging and instrumentation
-
         PropertyConfigurator.configure(log4j_conf);
 
-        // load the sample text from a file
-
-        final String text = IOUtils.readFile(data_file);
+        List<File> texts;
+        File data = new File(data_file);
+        if (data.isDirectory()) {
+            texts = listFilesForFolder(data);
+        }
+        else {
+            texts = Collections.singletonList(data);
+        }
 
         // main entry point for the algorithm
         final TextRank tr = new TextRank(lang_code);
-        final TextRankRun run = tr.run(text);
+        for (File textFile : texts) {
+            final TextRankRun run = tr.run(textFile);
+            LOG.info("\n\n=======:: "+textFile.getAbsolutePath());
+            LOG.info("\n" + run);
+        }
         tr.shutdown();
-
-        LOG.info("\n" + run);
     }
+
+    static public List<File> listFilesForFolder(final File folder) {
+        ArrayList<File> files = new ArrayList<>();
+        for (final File fileEntry : folder.listFiles()) {
+            if (fileEntry.isDirectory()) {
+                files.addAll(listFilesForFolder(fileEntry));
+            } else {
+                files.add(fileEntry);
+            }
+        }
+        return files;
+    }
+
 }
